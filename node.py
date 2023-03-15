@@ -4,7 +4,7 @@ from wallet import Wallet
 import util
 
 BOOTSTRAP_PORT = '5000'
-BOOTSTRAP_IP = '192.168.1.18'
+BOOTSTRAP_IP = '192.168.0.4'
 
 class Node:
     def __init__(self, is_bootstrap=False, nodes=5):
@@ -19,6 +19,7 @@ class Node:
         self.create_wallet()
         self.ring = []
         if is_bootstrap:
+            print("Bootstrap node created, nodes = ", self.nodes)
             self.id = 0
             self.ring.append([0, util.get_ip()+':'+BOOTSTRAP_PORT, self.wallet.public_key])
         else:
@@ -34,7 +35,7 @@ class Node:
 
     def register_request(self):
         url = "http://"+BOOTSTRAP_IP+':'+BOOTSTRAP_PORT+"/register"
-        body = {'ip_port': util.get_ip(), 'public_key' : self.wallet.public_key.decode('utf-8')}
+        body = {'ip_port': util.get_ip()+PORT, 'public_key' : self.wallet.public_key.decode('utf-8')}
         #print(url)
         response = requests.post(url, json=body)
         if response:
@@ -44,20 +45,21 @@ class Node:
 		#bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
     def register_node_to_ring(self, ip_port, public_key):
         self.ring.append([len(self.ring), ip_port, public_key])
-        if len(self.ring)-1 == self.nodes:
+        if len(self.ring) == self.nodes:
             self.broadcast_ring()
         return len(self.ring)-1
 
     def broadcast_ring(self):
         body = [{"id": node[0], "ip_port": node[1], 'public_key': node[2].decode('utf-8')} for node in self.ring]
-        print(body)
+        print("ABOUT TO BROADCAST RING")
         for node in self.ring[1:]:
             ip_port = node[1]
             url = "http://"+ip_port+"/ring"
+            print("The URL is: ", url)
             body = {'ring' : body}
             response = requests.put(url, json=body)
             if response:
-                print("Sucessful response")
+                print("Successful response")
                 
     def add_to_ring(self, id, ip_port, public_key):
         self.ring.append([id, ip_port, public_key])

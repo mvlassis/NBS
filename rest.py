@@ -21,10 +21,11 @@ CORS(app)
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    print(data)
+    print("A NODE HAS BEEN REGISTERED", data)
     if data:       
         ip_port = data.get('ip_port')
-        public_key = data.get('public_key')
+        public_key_decoded = data.get('public_key')
+        public_key = public_key_decoded.encode('utf-8')
         id = node.register_node_to_ring(ip_port, public_key)
         # ip_port = request.args.get('ip_port')
         # public_key = request.args.get('public_key')
