@@ -21,7 +21,7 @@ CORS(app)
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    print("A NODE HAS BEEN REGISTERED", data)
+    print("A NODE HAS BEEN REGISTERED")
     if data:       
         ip_port = data.get('ip_port')
         public_key_decoded = data.get('public_key')
@@ -33,12 +33,13 @@ def register():
         node.print_ring()
         return jsonify(response), 200
     else:
-        response = {"error"}
+        response = {'id' : "error"}
         return jsonify(response), 400
 
 @app.route('/ring', methods=['PUT'])
 def update_ring():
     data = request.get_json()
+    print("Just got ring data from bootstrap, adding it to the ring")
     print(data)
     if data:
         for n in data.get('ring'):
@@ -48,11 +49,12 @@ def update_ring():
             node.add_to_ring(id, ip_port, public_key)
         # ip_port = request.args.get('ip_port')
         # public_key = request.args.get('public_key')
+        print("Ring update finished, the full ring is:")
         node.print_ring()
-        response = {"OK"}
+        response = {'status' : "OK"}
         return jsonify(response), 200
     else:
-        response = {"Error"}
+        response = {'status' : "Error"}
         return jsonify(response), 400
 
 # get all transactions in the blockchain
@@ -84,4 +86,7 @@ if __name__ == '__main__':
         node = Node(True, args.nodes)
     else:
         node = Node(False)
+        node.register_request()
     app.run(host='0.0.0.0', port=port)
+
+

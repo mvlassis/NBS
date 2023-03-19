@@ -25,9 +25,10 @@ class Wallet:
 		#self.transactions
         key_object = RSA.generate(2048)
         self.public_key = key_object.publickey().export_key()
-        self.__private_key = key_object.export_key()
+        self.private_key = key_object.export_key()
+        self.balance = 0
         # print(self.public_key)
         # print(self.private_key)
 
     def balance():
-        pass
+        return balance
