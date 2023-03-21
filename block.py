@@ -13,7 +13,7 @@ class Block:
 		self.transactions = []
 		self.hash_block()
 	def __str__(self):
-		string = "BLOCK HASH: " + self.hash.hexdigest() + '\n'
+		string = 'BLOCK HASH: ' + self.hash.hexdigest() + '\n'
 		for transaction in self.transactions:
 			string += str(transaction)
 			string += '\n'
@@ -32,7 +32,6 @@ class Block:
 				 'timestamp': str(self.timestamp),
 				 'transactions': transactions_to_json
 		}
-		print(block)
 		return json.dumps(block)
 
 	def add_transaction_to_block(self, transaction):
@@ -41,4 +40,4 @@ class Block:
 		self.hash_block()
 		
 	def print_timestamp(self):
-		print("Timestamp:", self.timestamp)
+		print('Timestamp:', self.timestamp)

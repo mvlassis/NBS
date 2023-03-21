@@ -1,3 +1,4 @@
+import ast
 import requests
 from threading import Thread
 import time
@@ -61,11 +62,12 @@ class Node:
 		# Check if the node has been already registered
 		for node in self.ring:
 			if node[1] == ip_port:
-				print("The node has already been registered")
+				print('The node has already been registered')
 				return
 
-		self.create_transaction(ip_port, 100, broadcast=False) # 100 is a magic number of starting NBCs
 		self.ring.append([len(self.ring), ip_port, public_key])
+		self.create_transaction(ip_port, 100, broadcast=False) # 100 is a magic number of starting NBCs
+
 		print("A node has been registered and 100 NBCs have been transferred")
 		
 		# If all nodes have been registered, broadcast the whole ring, then
@@ -78,6 +80,7 @@ class Node:
 	# Broadcast the ring to all members of the ring
 	def broadcast_ring(self):
 		time.sleep(3)
+		self.print_ring()
 		data_body = [{"id": node[0], "ip_port": node[1], 'public_key': node[2].decode('utf-8')} for node in self.ring]
 		print("About to broadcast the ring to all the nodes in the network...")
 		for node in self.ring[1:]:
@@ -95,14 +98,26 @@ class Node:
 	def print_ring(self):
 		for node in self.ring:
 			print(node)
+		print()
 
+	def get_balance(self, ip_port):
+		balance = 0
+		for utxo in self.all_utxos[ip_port]:
+			balance += utxo['amount']
+		return balance
+			
 	def create_transaction(self, receiver_address, amount, broadcast=True):
-		# Remember to broadcast it
+		found = False
+		for node in self.ring:
+			if receiver_address == node[1]:
+				found = True
+		if not found:
+			return False
 		cur_sum = 0
 		remaining = 0
 		index = -1
 		transaction_inputs = []
-		for i, unspent_transaction in enumerate(self.unspent_transactions):
+		for i, unspent_transaction in enumerate(self.all_utxos[self.sender_address]):
 			cur_sum += unspent_transaction['amount']
 			transaction_inputs.append(unspent_transaction['id'])
 			if cur_sum >= amount:
@@ -110,8 +125,8 @@ class Node:
 				index = i
 				break
 		if cur_sum < amount:
-			print("Cannot go forward with the transaction, not enough UTXOs in your wallet!")
-			return				 
+			print('Cannot go forward with the transaction, not enough UTXOs in your wallet!')
+			return False		 
 
 		transaction = Transaction(self.sender_address, receiver_address, amount,
 								  transaction_inputs)
@@ -130,16 +145,14 @@ class Node:
 		transaction_outputs.append(d2)
 		
 		transaction.transaction_outputs = transaction_outputs
+		
 
-		if index == len(self.unspent_transactions) - 1:
-			self.unspent_transactions = [transaction_outputs[1]]
+		if index == len(self.all_utxos[self.sender_address]) - 1:
+			self.all_utxos[self.sender_address] = [transaction_outputs[1]]
 		else:
-			self.unspent_transactions[index+1:]
-			self.unspent_transactions.append[transactions_outputs[1]]
+			self.all_utxos[self.sender_address] = self.all_utxos[self.sender_address][index+1:]
+			self.all_utxos[self.sender_address].append(transaction_outputs[1])
 
-		if not self.all_utxos.get(self.sender_address):
-			self.all_utxos[self.sender_address] = []
-		self.all_utxos[self.sender_address] = self.unspent_transactions.copy()
 		if not self.all_utxos.get(receiver_address):
 			self.all_utxos[receiver_address] = []
 		self.all_utxos[receiver_address].append(transaction_outputs[0])
@@ -150,45 +163,70 @@ class Node:
 			self.broadcast_transaction(transaction)
 		
 		self.add_transaction_to_blockchain(transaction)
-		
-
-
+		return True
+	
 	def broadcast_transaction(self, transaction):
-		print("About to broadcast a transaction")
+		print('About to broadcast a transaction to all nodes in the network...')
 		data = transaction.to_json()
 		for node in self.ring:
 			ip_port = node[1]
-			if ip_port == self.sender_address:
+			if ip_port == self.sender_address: # Don't send anything to myself
 				continue
-			url = 'http://'+ip_port+'/transaction'
+			url = 'http://'+ip_port+'/receive_transaction'
 			body = {'transaction': data}
 			response = requests.post(url, json=body)
 			if response:
 				print('Node:', ip_port, 'HTTP code:', response.status_code)
 
 
-	def validate_transaction():
-		#use of signature and NBCs balance
-		pass
+	def validate_transaction(self, transaction):
+		sender = transaction.sender_address
+		public_key = None
+		for node in self.ring:
+			if sender == node[1]:
+				public_key = node[2]
+				break
+		if not transaction.verify_signature(public_key):
+			print("Signature is not valid!")
+			return False
+		
+		transaction_inputs = ast.literal_eval(transaction.transaction_inputs)
+		transaction_outputs = ast.literal_eval(transaction.transaction_outputs)
+		is_valid = False
+		found = 0
+		utxos_to_remove = []
+		for t_input in transaction_inputs:
+			for unspent in self.all_utxos[sender]:
+				if t_input == unspent['id']:
+					found += 1
+					utxos_to_remove.append(unspent)
+					break
+		if found == len(transaction_inputs):
+			for utxo in utxos_to_remove:
+				self.all_utxos[sender].remove(utxo)
+			for t_output in transaction_outputs:
+				self.all_utxos[t_output['target']].append(t_output)
+		return True
+
 
 	def add_transaction_to_blockchain(self, transaction):
 		#if enough transactions mine
 		self.chain.get_last_block().add_transaction_to_block(transaction)
+		print(self.chain)
 
 
 	def mine_block():
 		pass
 
-
 	def broadcast_block(self, block):
-		print("About to broadcast a new block to all the nodes in the network...")
+		print('About to broadcast a new block to all the nodes in the network...')
 		data = block.to_json()
 		for node in self.ring:
 			ip_port = node[1]
 			if ip_port == self.sender_address:
 				continue
-			url = 'http://'+ip_port+'/block'
-			body = {'block' : data}
+			url = 'http://'+ip_port+'/receive_block'
+			body = {'block' : data, 'all_utxos': self.all_utxos}
 			response = requests.post(url, json=body)
 			if response:
 				print('Node:', ip_port, ' HTTP code:', response.status_code)
@@ -198,6 +236,8 @@ class Node:
 		return is_valid
 
 	def add_block_to_blockchain(self, block):
+		for transaction in block.transactions:
+			pass
 		self.chain.blocks.append(block)
 		
 		

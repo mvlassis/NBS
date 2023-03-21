@@ -5,6 +5,12 @@ class Blockchain:
 	def __init__(self):
 		self.blocks = []
 
+	def __str__(self):
+		string = "BLOCKCHAIN:\n"
+		for block in self.blocks:
+			string += str(block) + '\n'
+		return string
+
 	def create_genesis(self, total_nodes, bootstrap_address):
 		new_block = block.Block(1, 0)
 		starting_amount = 100 * total_nodes
@@ -14,6 +20,7 @@ class Blockchain:
 		self.blocks.append(new_block)
 		print("Created genesis block")
 		print(new_block)
+		return ts.transaction_id
 
 	def get_last_block(self):
 		if self.blocks:
