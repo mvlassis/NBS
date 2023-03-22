@@ -1,7 +1,6 @@
 import socket
 
 PORT = '5000'
-
 def get_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.settimeout(0)

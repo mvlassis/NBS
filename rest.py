@@ -31,8 +31,20 @@ def get_balance():
 	else:
 		response = {'balance' : 'An error occured'}
 		return jsonify(response), 400
-
-# Print the node's blockchain
+	
+# Get the total balance of a user
+@app.route('/view_last_block', methods=['GET'])
+def get_last_block():
+	balance = node.get_balance(my_ip_port)
+	last_block = node.chain.get_last_block()
+	if last_block:
+		response = {'block' : last_block.to_json()}
+		return jsonify(response), 200
+	else:
+		response = {'block': ''}
+		return jsonify(response), 204
+	
+# Print the node's blockchain (all validated blocks)
 @app.route('/blockchain', methods=['GET'])
 def get_blockchain():
 	blockchain = str(node.chain)
@@ -110,7 +122,18 @@ def receive_block():
 			new_transaction = Transaction(sender_address, recipient_address, amount,
 										  transaction_inputs, transaction_outputs)
 			new_block.add_transaction_to_block(new_transaction)
-		if node.validate_block(new_block):
+			new_block.hash_block()
+
+		is_genesis = data.get('genesis')
+		if is_genesis:
+			print('Adding genesis block to the blockchain...')
+			node.add_block_to_blockchain(new_block, genesis=True)
+			print('Updating all utxos...')			
+			all_utxos = data.get('all_utxos')
+			node.all_utxos = all_utxos.copy()
+			response = {'status' : 'Block added to blockchain'}
+			return jsonify(response, 200)
+		elif node.validate_block(new_block):
 			print('Block is valid! Adding to the blockchain...')
 			node.add_block_to_blockchain(new_block)
 			print(new_block)

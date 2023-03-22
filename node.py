@@ -15,13 +15,9 @@ BOOTSTRAP_IP = '192.168.0.4'
 
 class Node:
 	def __init__(self, is_bootstrap=False, nodes=5):
-		##set
-
-		#self.chain
-		#self.current_id_count
-		#self.NBCs
 		#self.wallet
 		self.chain = Blockchain()
+		self.current_block = block.Block(0)
 		self.nodes = nodes
 		self.sender_address = util.get_ip()+':'+BOOTSTRAP_PORT
 		self.create_wallet()
@@ -32,18 +28,15 @@ class Node:
 			print("The bootstrap node has been created, nodes =", self.nodes)
 			self.id = 0
 			self.ring.append([0, util.get_ip()+':'+BOOTSTRAP_PORT, self.wallet.public_key])
-			genesis_transaction_id = self.chain.create_genesis(self.nodes, self.sender_address)
+			genesis_transaction_id = self.current_block.create_genesis(self.nodes,
+																	   self.sender_address)
 			d = dict()
 			d['id'] = genesis_transaction_id
 			d['target'] = self.sender_address
 			d['amount'] = 100 * self.nodes # 100 is a magic number
 			self.unspent_transactions.append(d)
 			self.all_utxos[self.sender_address] = self.unspent_transactions.copy()
-		#slef.ring[]   #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
 
-	def create_new_block():
-		pass
-		
 	# Create a wallet for this node, with a public key and a private key
 	def create_wallet(self):
 		self.wallet = Wallet()
@@ -91,7 +84,10 @@ class Node:
 			response = requests.put(url, json=body)
 			if response:
 				print(response)
-		self.broadcast_block(self.chain.get_last_block())
+		if self.chain.blocks:
+			for block in self.chain.blocks:
+				self.broadcast_block(self.chain.get_last_block(), genesis=True)
+		self.broadcast_block(self.current_block, genesis=True)
 	def add_to_ring(self, id, ip_port, public_key):
 		self.ring.append([id, ip_port, public_key])
 	
@@ -105,7 +101,51 @@ class Node:
 		for utxo in self.all_utxos[ip_port]:
 			balance += utxo['amount']
 		return balance
-			
+
+	def add_transaction_to_blockchain(self, transaction):
+		#if enough transactions mine
+		flag = self.current_block.add_transaction_to_block(transaction)
+		if not flag:
+			print('Capacity reached, mining for a new block...')
+			thread = Thread(target=self.mine_block)
+			thread.start()
+			self.current_block.add_transaction_to_block(transaction)
+			self.chain.blocks.append(self.current_block)
+			self.current_block = block.Block(self.chain.get_last_block().hash)
+			self.broadcast_block(self.chain.get_last_block())
+		print(self.chain)
+
+
+	def mine_block(self):
+		self.current_block.hash_block()
+		self.current_block.mine()
+
+	def broadcast_block(self, block, genesis=False):
+		print('About to broadcast a new block to all the nodes in the network...')
+		data = block.to_json()
+		for node in self.ring:
+			ip_port = node[1]
+			if ip_port == self.sender_address:
+				continue
+			url = 'http://'+ip_port+'/receive_block'
+			body = {'block' : data, 'all_utxos': self.all_utxos, 'genesis' : genesis}
+			response = requests.post(url, json=body)
+			if response:
+				print('Node:', ip_port, ' HTTP code:', response.status_code)
+
+	def validate_block(self, block):
+		is_valid = self.chain.validate_block(block)
+		return is_valid
+
+	def add_block_to_blockchain(self, new_block, genesis=False):
+		if genesis:
+			self.current_block = new_block
+		else:
+			self.chain.blocks.append(new_block)
+			self.current_block = block.Block(0)
+		
+
+	
 	def create_transaction(self, receiver_address, amount, broadcast=True):
 		found = False
 		for node in self.ring:
@@ -206,41 +246,7 @@ class Node:
 				self.all_utxos[sender].remove(utxo)
 			for t_output in transaction_outputs:
 				self.all_utxos[t_output['target']].append(t_output)
-		return True
-
-
-	def add_transaction_to_blockchain(self, transaction):
-		#if enough transactions mine
-		self.chain.get_last_block().add_transaction_to_block(transaction)
-		print(self.chain)
-
-
-	def mine_block():
-		pass
-
-	def broadcast_block(self, block):
-		print('About to broadcast a new block to all the nodes in the network...')
-		data = block.to_json()
-		for node in self.ring:
-			ip_port = node[1]
-			if ip_port == self.sender_address:
-				continue
-			url = 'http://'+ip_port+'/receive_block'
-			body = {'block' : data, 'all_utxos': self.all_utxos}
-			response = requests.post(url, json=body)
-			if response:
-				print('Node:', ip_port, ' HTTP code:', response.status_code)
-
-	def validate_block(self, block):
-		is_valid = self.chain.validate_block(block)
-		return is_valid
-
-	def add_block_to_blockchain(self, block):
-		for transaction in block.transactions:
-			pass
-		self.chain.blocks.append(block)
-		
-		
+		return True		
 
 #    def valid_proof(.., difficulty=MINING_DIFFICULTY):
 
