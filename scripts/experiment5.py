@@ -1,4 +1,4 @@
-path = 'C:/Users/Desktop/Desktop/Εργασίες Παναγιώτης 7/katanemimena/ergasia/5nodes/transactions0.txt'
+path = '../5nodes/transactions0.txt'
 with open(path, 'r') as file:
     data = file.readlines()
 
