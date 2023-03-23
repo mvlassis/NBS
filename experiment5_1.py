@@ -2,6 +2,9 @@ import subprocess
 import time
 
 path = './5nodes/trans0.txt'
+with open('mine_times.txt', 'r') as file1:
+	data1 = file1.readlines()
+y = len(data1)
 with open(path, 'r') as file:
     data = file.readlines()
 count = 0
@@ -29,7 +32,8 @@ for line in data:
 	#while (flag):
 	#	with open('mine_times.txt', 'r') as file1:
 	#		data1 = file1.readlines()
-	#		if len(data1) == count:
+	#		if len(data1) == y+1:
+	#			y=y+1
 	#			flag = False
 	time.sleep(10)
 
