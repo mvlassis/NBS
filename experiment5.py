@@ -1,7 +1,7 @@
 import subprocess
 import time
 
-path = './5nodes/trans0.txt'
+path = './5nodes/transactions0.txt'
 with open(path, 'r') as file:
     data = file.readlines()
 count = 0
@@ -25,7 +25,8 @@ for line in data:
 	process = subprocess.Popen(full_command.split(), stdout=subprocess.PIPE)
 	print(ip_port)
 	count = count+1
-			
+	if count%3 == 0:
+		time.sleep(10)
 t1 = time.time()
 timetotal = t1-t
 throughput = count/(timetotal/1000)
