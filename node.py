@@ -24,6 +24,7 @@ class Node:
 		self.unspent_transactions = []
 		self.all_utxos = dict()
 		self.ring = []
+		self.mine_flag = False
 		if is_bootstrap:
 			print("The bootstrap node has been created, nodes =", self.nodes)
 			self.id = 0
@@ -104,21 +105,30 @@ class Node:
 
 	def add_transaction_to_blockchain(self, transaction):
 		#if enough transactions mine
-		flag = self.current_block.add_transaction_to_block(transaction)
-		if not flag:
+		self.current_block.add_transaction_to_block(transaction)
+		if self.current_block.is_full():
 			print('Capacity reached, mining for a new block...')
 			thread = Thread(target=self.mine_block)
 			thread.start()
-			self.current_block.add_transaction_to_block(transaction)
-			self.chain.blocks.append(self.current_block)
-			self.current_block = block.Block(self.chain.get_last_block().hash)
-			self.broadcast_block(self.chain.get_last_block())
 		print(self.chain)
 
 
 	def mine_block(self):
-		self.current_block.hash_block()
-		self.current_block.mine()
+		new_block = block.Block(self.current_block.previousHash, self.current_block.nonce,
+						  self.current_block.timestamp)
+		for t in self.current_block.transactions:
+			new_block.add_transaction_to_block(t)
+		new_block.hash_block()
+		new_block.mine()
+		print('Mined with hash =', new_block.hash)
+		if not self.mine_flag:
+			print('Did not receive a different block')
+			self.chain.blocks.append(new_block)
+			self.current_block = block.Block(self.chain.get_last_block().hash)
+			self.broadcast_block(self.chain.get_last_block())
+		else:
+			print('Babagisssssss')
+		self.mine_flag = False
 
 	def broadcast_block(self, block, genesis=False):
 		print('About to broadcast a new block to all the nodes in the network...')
@@ -137,12 +147,16 @@ class Node:
 		is_valid = self.chain.validate_block(block)
 		return is_valid
 
-	def add_block_to_blockchain(self, new_block, genesis=False):
+	def add_block_to_blockchain(self, new_block, all_utxos, genesis=False):
 		if genesis:
 			self.current_block = new_block
+			self.all_utxos = all_utxos
 		else:
-			self.chain.blocks.append(new_block)
-			self.current_block = block.Block(0)
+			if not self.chain.get_last_block() or self.chain.get_last_block().previousHash == new_block.previousHash:
+				print('Received a block that I am mining!!!!!!')
+				self.chain.blocks.append(new_block)
+				self.current_block = block.Block(new_block.hash)
+				self.mine_flag = True
 		
 
 	

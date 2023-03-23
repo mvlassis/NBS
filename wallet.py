@@ -1,5 +1,3 @@
-import binascii
-
 import Crypto
 import Crypto.Random
 from Crypto.Hash import SHA

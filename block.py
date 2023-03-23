@@ -4,6 +4,7 @@ import json
 
 import blockchain
 import transaction
+import util
 
 BLOCK_CAPACITY = 3
 MINING_DIFFICULTY = 4
@@ -17,7 +18,8 @@ class Block:
 		self.hash_block()
 		
 	def __str__(self):
-		string = 'BLOCK HASH: ' + self.hash + '\n'
+		string = 'PREVIOUS HASH:' + str(self.previousHash) + '\n'
+		string += 'BLOCK HASH: ' + self.hash + '\n'
 		for transaction in self.transactions:
 			string += str(transaction)
 			string += '\n'
@@ -46,14 +48,14 @@ class Block:
 		}
 		return json.dumps(block)
 
-	
+
 	def add_transaction_to_block(self, transaction):
 		# Add a transaction to this block
 		if len(self.transactions) < BLOCK_CAPACITY:
 			self.transactions.append(transaction)
-			return True
-		else:
-			return False
+
+	def is_full(self):
+		return len(self.transactions) == BLOCK_CAPACITY
 		
 	def print_timestamp(self):
 		print('Timestamp:', self.timestamp)
@@ -61,7 +63,7 @@ class Block:
 	def mine(self):
 		flag = False
 		while not flag:
-			self.nonce += 1
+			self.nonce = util.generate_nonce()
 			self.hash_block()
 			flag = (self.hash[:MINING_DIFFICULTY] == '0'*MINING_DIFFICULTY)
 
@@ -70,4 +72,4 @@ if __name__ == '__main__':
 	block = Block(0, 0)
 	block.mine()
 	str = datetime.datetime.now() - start
-	print('Done in ', str)
+	print('Done in', str)

@@ -127,19 +127,17 @@ def receive_block():
 		is_genesis = data.get('genesis')
 		if is_genesis:
 			print('Adding genesis block to the blockchain...')
-			node.add_block_to_blockchain(new_block, genesis=True)
-			print('Updating all utxos...')			
 			all_utxos = data.get('all_utxos')
-			node.all_utxos = all_utxos.copy()
+			node.add_block_to_blockchain(new_block, all_utxos, genesis=True)
+			print('Updating all utxos...')			
 			response = {'status' : 'Block added to blockchain'}
 			return jsonify(response, 200)
 		elif node.validate_block(new_block):
 			print('Block is valid! Adding to the blockchain...')
-			node.add_block_to_blockchain(new_block)
+			all_utxos = data.get('all_utxos')
+			node.add_block_to_blockchain(new_block, all_utxos)
 			print(new_block)
 			print('Updating all utxos...')			
-			all_utxos = data.get('all_utxos')
-			node.all_utxos = all_utxos.copy()
 			response = {'status' : 'Block added to blockchain'}
 			return jsonify(response, 200)
 		else:
