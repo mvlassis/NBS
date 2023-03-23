@@ -32,6 +32,15 @@ t1 = time.time()
 timetotal = t1-t
 throughput = count/(timetotal/1000)
 print(throughput)
+total_trans = 0
+blocktime = 0
+with open('mine_times.txt', 'r') as file:
+	data = file.readlines()
+	for line in data:
+		total_trans += 1
+		blocktime = blocktime + int(line.replace('\n',''))
+	meanblock = blocktime/total_trans
+	print('Mean block time =', meanblock)
 
 			# command = 'cli.py t '+ attributes[0] + ' ' + attributes[1]
 			# process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
