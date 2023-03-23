@@ -136,7 +136,6 @@ def receive_block():
 			print('Block is valid! Adding to the blockchain...')
 			all_utxos = data.get('all_utxos')
 			node.add_block_to_blockchain(new_block, all_utxos)
-			print(new_block)
 			print('Updating all utxos...')			
 			response = {'status' : 'Block added to blockchain'}
 			return jsonify(response, 200)
@@ -165,7 +164,6 @@ def receive_transaction():
 	if data:
 		print("Just received data for a new transaction, checking to see if it is valid...")
 		t_data = ast.literal_eval(data.get('transaction'))
-		print('Transaction data', t_data)
 		sender_address = t_data['sender_address']
 		recipient_address = t_data['recipient_address']
 		amount = t_data['amount']

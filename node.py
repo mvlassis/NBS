@@ -18,6 +18,7 @@ class Node:
 		#self.wallet
 		self.chain = Blockchain()
 		self.current_block = block.Block(0)
+		self.block_buffer = []
 		self.nodes = nodes
 		self.sender_address = util.get_ip()+':'+BOOTSTRAP_PORT
 		self.create_wallet()
@@ -119,10 +120,15 @@ class Node:
 		for t in self.current_block.transactions:
 			new_block.add_transaction_to_block(t)
 		new_block.hash_block()
+		timon = time.time()
 		new_block.mine()
+		timon = str(time.time() - timon) + '\n'
 		print('Mined with hash =', new_block.hash)
 		if not self.mine_flag:
 			print('Did not receive a different block')
+			file = open('mine_times.txt', 'a')
+			file.write(timon)
+			file.close()
 			self.chain.blocks.append(new_block)
 			self.current_block = block.Block(self.chain.get_last_block().hash)
 			self.broadcast_block(self.chain.get_last_block())
