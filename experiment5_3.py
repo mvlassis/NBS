@@ -26,8 +26,20 @@ for line in data:
 	print(ip_port)
 	count = count+1
 	if count == 1:
+		#flag = True
+		#while (flag):
+		#	with open('mine_times.txt', 'r') as file1:
+		#		data1 = file1.readlines()
+		#		if len(data1) == count:
+		#			flag = False
 		time.sleep(10)
 	if (count-1) % 3 == 0:
+		#flag = True
+		#while (flag):
+		#	with open('mine_times.txt', 'r') as file1:
+		#		data1 = file1.readlines()
+		#		if len(data1) == count:
+		#			flag = False
 		time.sleep(10)
 			
 t1 = time.time()
