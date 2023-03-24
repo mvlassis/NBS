@@ -1,7 +1,10 @@
 import ast
+from collections import deque
+from copy import deepcopy
 import requests
-from threading import Thread
+from threading import Event, Lock, Thread
 import time
+import datetime
 import util
 
 import block
@@ -18,14 +21,19 @@ class Node:
 		#self.wallet
 		self.chain = Blockchain()
 		self.current_block = block.Block(0)
-		self.block_buffer = []
+		self.block_buffer = deque()
+		self.block_lock = Lock()
+		self.chain_lock = Lock()
+		
 		self.nodes = nodes
 		self.sender_address = util.get_ip()+':'+BOOTSTRAP_PORT
 		self.create_wallet()
 		self.unspent_transactions = []
 		self.all_utxos = dict()
 		self.ring = []
-		self.mine_flag = False
+		self.mine_flag = Event()
+		self.mine_thread = Thread(target=self.mine_block)
+		self.mine_thread.start()
 		if is_bootstrap:
 			print("The bootstrap node has been created, nodes =", self.nodes)
 			self.id = 0
@@ -106,36 +114,57 @@ class Node:
 
 	def add_transaction_to_blockchain(self, transaction):
 		#if enough transactions mine
+		self.block_lock.acquire()
 		self.current_block.add_transaction_to_block(transaction)
 		if self.current_block.is_full():
-			print('Capacity reached, mining for a new block...')
-			thread = Thread(target=self.mine_block)
-			thread.start()
-		print(self.chain)
+			self.block_buffer.append(deepcopy(self.current_block))
+			self.current_block = block.Block(0, 0)
+			self.block_lock.release()
+			self.mine_flag.set()
+		else:
+			self.block_lock.release()
 
 
 	def mine_block(self):
-		new_block = block.Block(self.current_block.previousHash, self.current_block.nonce,
-						  self.current_block.timestamp)
-		for t in self.current_block.transactions:
-			new_block.add_transaction_to_block(t)
-		new_block.hash_block()
-		timon = time.time()
-		new_block.mine()
-		timon = str(time.time() - timon) + '\n'
-		print('Mined with hash =', new_block.hash)
-		if not self.mine_flag:
-			print('Did not receive a different block')
-			file = open('mine_times.txt', 'a')
-			file.write(timon)
-			file.close()
-			self.chain.blocks.append(new_block)
-			self.current_block = block.Block(self.chain.get_last_block().hash)
-			self.broadcast_block(self.chain.get_last_block())
-		else:
-			print('Babagisssssss')
-		self.mine_flag = False
+		while True:
+			self.mine_flag.wait()
+			while self.block_buffer:
+				print('Mining for a new block...')
+				block_to_mine = self.block_buffer.popleft()
+				self.chain_lock.acquire()
+				if self.chain.get_last_block():
+					block_to_mine.previousHash = self.chain.get_last_block().hash
+				else:
+					block_to_mine.previousHash = 0
+				self.chain_lock.release()
+				block_to_mine.hash_block()
+				mine_time = time.time()
+				block_to_mine.mine()
+				mine_time = str(time.time() - mine_time) + '\n'
+				print('Block successfuly mined!')
+				file = open('mine_times.txt', 'a')
+				file.write(mine_time)
+				file.close()
+				self.chain_lock.acquire()
+				skip_flag = False
+				if self.chain.get_last_block():
+					for b in self.chain.blocks:
+						for t1 in b.transactions:
+							for t2 in block_to_mine.transactions:
+								if t1.transaction_id == t2.transaction_id:
+									skip_flag = True
+									break
+				self.chain_lock.release()
+				if not skip_flag:
+					self.chain.blocks.append(block_to_mine)
+					self.broadcast_block(block_to_mine)
+				else:
+					print('I already have a similar block, skipping it...')
+			self.mine_flag.clear()
 
+	def filter_blocks(self):
+		pass
+		
 	def broadcast_block(self, block, genesis=False):
 		print('About to broadcast a new block to all the nodes in the network...')
 		data = block.to_json()
@@ -158,11 +187,15 @@ class Node:
 			self.current_block = new_block
 			self.all_utxos = all_utxos
 		else:
-			if not self.chain.get_last_block() or self.chain.get_last_block().previousHash == new_block.previousHash:
-				print('Received a block that I am mining!!!!!!')
-				self.chain.blocks.append(new_block)
-				self.current_block = block.Block(new_block.hash)
-				self.mine_flag = True
+			for b in self.block_buffer:
+				for buffer_t in b.transactions:
+					for t in new_block.transactions:
+						if buffer_t.transaction_id == t.transaction_id:
+							print('Found transactions for a block I was about to mine')
+			self.chain_lock.acquire()				
+			self.chain.blocks.append(new_block)
+			self.all_utxos = all_utxos
+			self.chain_lock.release()
 		
 
 	

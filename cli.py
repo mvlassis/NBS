@@ -28,7 +28,6 @@ parser_t.add_argument("amount",  help="The amount in Noobcash")
 args = parser.parse_args()
 
 if args.subcommand == "t":
-	print("Transaction")
 	url = 'http://'+ my_ip_port + '/create_transaction'
 	body = {'recipient' : args.recipient_address, 'amount': args.amount}
 	response = requests.post(url, json=body)
@@ -81,4 +80,9 @@ elif args.subcommand == 'blockchain':
 			blockchain = response.json().get('blockchain')
 			print(blockchain)
 elif args.subcommand == "help":
-	print("Help")
+	message = '''USAGE: python cli.py <subcommand>, where subcommand can be one of:\n
+- t <address> <amount> : Send <amount> to <address> (<address> must be a valid IP address + port)\n
+- view                 : Show all transactions of the last validated block\n
+- balance              : Show current balance of the wallet\n
+- help                 : Show this message\n'''
+	print(message)

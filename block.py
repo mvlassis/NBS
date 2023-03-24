@@ -56,6 +56,9 @@ class Block:
 
 	def is_full(self):
 		return len(self.transactions) == BLOCK_CAPACITY
+
+	def has_correct_hash(self):
+		return (self.hash[:MINING_DIFFICULTY] == '0'*MINING_DIFFICULTY)
 		
 	def print_timestamp(self):
 		print('Timestamp:', self.timestamp)

@@ -34,5 +34,7 @@ class Blockchain:
 		if self.blocks:
 			if new_block.previousHash != self.get_last_block().hash:
 				is_valid = False
+			if not new_block.has_correct_hash():
+				is_valid = False
 		return is_valid
 			

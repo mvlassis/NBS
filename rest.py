@@ -4,6 +4,7 @@ from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import json
 import requests
+import datetime
 
 from blockchain import Blockchain
 from block import Block
@@ -90,14 +91,6 @@ def update_ring():
 		response = {'status' : "Error"}
 		return jsonify(response), 400
 
-# Get all transactions in the blockchain
-@app.route('/transactions/get', methods=['GET'])
-def get_transactions():
-	# transactions = blockchain.transactions
-	# response = {'transactions': transactions}
-	response2 = {'transactions': 'yeee'}
-	return jsonify(response2), 200
-
 # Receive a new block from a node
 @app.route('/receive_block', methods=['POST'])
 def receive_block():
@@ -140,6 +133,7 @@ def receive_block():
 			response = {'status' : 'Block added to blockchain'}
 			return jsonify(response, 200)
 		else:
+			print('Block is not valid!')
 			response = {'status' : 'Error: block cannot be validated!'}
 			return jsonify(response, 400)
 
@@ -162,7 +156,7 @@ def create_transaction():
 def receive_transaction():
 	data = request.get_json()
 	if data:
-		print("Just received data for a new transaction, checking to see if it is valid...")
+		print(str(datetime.datetime.now())+ "Just received data for a new transaction, checking to see if it is valid...")
 		t_data = ast.literal_eval(data.get('transaction'))
 		sender_address = t_data['sender_address']
 		recipient_address = t_data['recipient_address']
@@ -171,6 +165,7 @@ def receive_transaction():
 		transaction_outputs = t_data['transaction_outputs']
 		new_transaction = Transaction(sender_address, recipient_address, amount,
 									  transaction_inputs, transaction_outputs)
+		print(new_transaction)
 		if node.validate_transaction(new_transaction):
 			node.add_transaction_to_blockchain(new_transaction)
 			response = 'Transaction is valid, added it to the blockchain'

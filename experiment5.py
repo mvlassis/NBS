@@ -5,7 +5,6 @@ path = './5nodes/trans0.txt'
 with open(path, 'r') as file:
     data = file.readlines()
 count = 0
-x = 0
 t = time.time()
 for line in data:
 	attributes = line.replace('\n', '').split(' ')
@@ -26,38 +25,11 @@ for line in data:
 	process = subprocess.Popen(full_command.split(), stdout=subprocess.PIPE)
 	print(ip_port)
 	count = count+1
-	if count == 1:
-		x = x+1
-		flag = True
-		while (flag):
-			with open('mine_times.txt', 'r') as file1:
-				data1 = file1.readlines()
-				if len(data1) == x:
-					flag = False
-		# time.sleep(10)
-	if (count-1) % 3 == 0:
-		x = x+1
-		flag = True
-		while (flag):
-			with open('mine_times.txt', 'r') as file1:
-				data1 = file1.readlines()
-				if len(data1) == x:
-					flag = False
-		# time.sleep(10)
 			
 t1 = time.time()
 timetotal = t1-t
 throughput = count/(timetotal/1000)
 print(throughput)
-total_trans = 0
-blocktime = 0
-with open('mine_times.txt', 'r') as file:
-	data = file.readlines()
-	for line in data:
-		total_trans += 1
-		blocktime = blocktime + int(line.replace('\n',''))
-	meanblock = blocktime/total_trans
-	print('Mean block time =', meanblock)
 
 			# command = 'cli.py t '+ attributes[0] + ' ' + attributes[1]
 			# process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
