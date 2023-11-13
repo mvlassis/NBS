@@ -1,12 +1,12 @@
-# Distributed-Systems-2023-NTUA
-A simple blockchain system that facilitates transactions of an imaginary coin named Noobcoin (NBC), with consensus reached via proof-of-work.
+# NBS
+NBS is a simple blockchain system that facilitates transactions of an imaginary coin named Noobcoin (NBC), with consensus reached via proof-of-work.
 
 ## Design
 The source code follows object-oriented design and is based around the following classes:
 - Node: Represents a computer node that has its own wallet and can make transactions with other nodes.
 - Blockchain: A ledger where all transactions are validated and stored. Each node has a copy of the blockchain and can add new blocks it it. Blocks are added after the node has successfully mined for a new block, or after receiving a valid block from another node.
-- Block: A series of transactions grouped together. Each block can store up to a cetrain number of transactions, specified by the MINING_CAPACITY constant. For a block to be valid, its SHA256 hash must begin from a certain number of 0s. specified by the MINING_DIFFICULTY constant.
-- Transaction: Represents a signle transaction. Each transaction **must** have a sender address, a recipient address, the amount to send, and a list of valid **transaction inputs** and **transaction ouptuts**.
+- Block: A series of transactions grouped together. Each block can store up to a certain number of transactions, specified by the MINING_CAPACITY constant. For a block to be valid, its SHA256 hash must begin from a certain number of 0s. specified by the MINING_DIFFICULTY constant.
+- Transaction: Represents a single transaction. Each transaction **must** have a sender address, a recipient address, the amount to send, and a list of valid **transaction inputs** and **transaction outputs**.
 - Wallet: Represents the wallet of a node. Each wallet is represented by its RSA-2048 public key, and can sign transactions using its RSA-2048 private key. Other nodes that receive the transaction have to validate the signature using the public key of the sender.
 
 ### Network
