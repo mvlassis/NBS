@@ -1,5 +1,5 @@
 # NBS
-NBS is a simple blockchain system that facilitates transactions of an imaginary coin named Noobcoin (NBC), with consensus reached via proof-of-work.
+NBS is a simple blockchain system that facilitates transactions of an imaginary coin named Noobcoin (NBC), with consensus reached via proof-of-work. This project was created as part of the 2022-2023 course in Distributed Systems from the National Technical University of Athens (NTUA).
 
 ## Design
 The source code follows object-oriented design and is based around the following classes:
